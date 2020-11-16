@@ -32,8 +32,12 @@ class User:
 
         self._sleep = self.client.sleep()
         self.sleep_target = self._sleep_goal['goal']['minDuration']
-        self.sleep_time = self._sleep['summary']['totalMinutesAsleep']
         self.alarm_id = self._alarms['trackerAlarms'][0]['alarmId']
+
+    @property
+    def sleep_time(self):
+        self._sleep = self.client.sleep()
+        return self._sleep['summary']['totalMinutesAsleep']
 
     @property
     def device_id(self):
@@ -49,8 +53,15 @@ class User:
 
     @property
     def is_awake(self):
+        self._sleep = self.client.sleep()
+
+        if len(self._sleep['sleep']) == 0:
+            return True
+
         wake_time = dateutil.parser.parse(self._sleep['sleep'][-1]['endTime'])
-        return self.timezone.localize(wake_time) < self.now
+        awake_for = self.now - self.timezone.localize(wake_time)
+        print("Awake for", awake_for)
+        return awake_for.total_seconds() > 0
 
 
 def main():
@@ -60,6 +71,7 @@ def main():
 
         print("Wakeup...", end="")
         if user.is_awake:
+            print(user._sleep)
             print("User Awake, bye.")
         else:
             print()
