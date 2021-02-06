@@ -31,6 +31,22 @@ class OAuth2Server:
 
         self.redirect_uri = redirect_uri
 
+    def remote_authorize(self):
+        """
+        Open a browser to the authorization url and spool up a CherryPy
+        server to accept the response
+        """
+        url, _ = self.fitbit.client.authorize_token_url()
+        # Open the web browser in a new thread for command-line browser support
+        # Same with redirect_uri hostname and port.
+        urlparams = urlparse(self.redirect_uri)
+        cherrypy.config.update({'server.socket_host': urlparams.hostname,
+                                'server.socket_port': urlparams.port})
+
+        fn = lambda: print("webbrowser.open", url)
+        threading.Timer(1, fn).start()
+        cherrypy.quickstart(self)
+
     def browser_authorize(self):
         """
         Open a browser to the authorization url and spool up a CherryPy
@@ -38,6 +54,7 @@ class OAuth2Server:
         """
         url, _ = self.fitbit.client.authorize_token_url()
         # Open the web browser in a new thread for command-line browser support
+        print("webbrowser.open", url)
         threading.Timer(1, webbrowser.open, args=(url,)).start()
 
         # Same with redirect_uri hostname and port.
